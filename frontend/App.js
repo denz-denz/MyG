@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function App() {
+  const name = 'alden'
   return (
     <View style={{ 
       flex: 1, 
@@ -10,6 +11,7 @@ export default function App() {
       backgroundColor: '#f0f0f0' 
     }}>
       <Text style={{ fontSize: 20 }}>🎉 Expo Go is working!?</Text>
+      <Text>hello {name}</Text>
       <StatusBar style="auto" />
     </View>
   );
