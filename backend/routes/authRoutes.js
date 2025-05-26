@@ -1,0 +1,113 @@
+const express = require('express');
+const bcrypt = require('bcryptjs'); //comparing password hash
+const User = require('../models/User'); //goes to User.js file in models
+const { OAuth2Client } = require('google-auth-library'); //for google login/signup
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const router = express.Router();
+//signup route
+router.post('/signup', async (req, res) => {
+    const { email, password, username } = req.body;
+    try {
+        //check if email in use
+        const existingUserEmail = await User.findOne({email});
+        if (existingUserEmail) {
+            return res.status(400).json({ message: 'Email already in use' });
+        }
+        //check if username in use
+        if (username) {
+            const existingUserName = await User.findOne({username});
+            if (existingUserName) {
+                return res.status(400).json({ message: 'username already in use' });
+            }
+        }
+        //create hashed password
+        const passwordHash = await bcrypt.hash(password, 10);
+        //create new User
+        const newUser = new User({username: username, email: email, password: passwordHash});
+        //save to db
+        await newUser.save();
+        res.status(201).json({
+            message: 'Signup successful',
+            userId: newUser._id,
+            email: newUser.email,
+            username: newUser.username
+          });
+    }
+    catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+      }
+        
+    });
+    
+//manual login route
+router.post('/manual-login' , async (req, res) => {
+    const { email, password } = req.body;
+    try {
+    // 1. Find the user by email
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+
+    // 2. Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password' });
+    }
+
+    // 3. Return success (you can add token logic later)
+    res.status(200).json({
+      message: 'Login successful',
+      userId: user._id,
+      email: user.email
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+//google login/signup route
+router.post('/google-login', async (req,res)=> {
+  console.log("📩 /auth/google-login was hit");
+
+  const { idToken } = req.body;
+
+  try {
+    // 1. Verify the token
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const name = payload.name;
+    const googleId = payload.sub;
+    // 2. Check if user exists
+    let user = await User.findOne({ email });
+
+    // 3. If not, create a new user (Google signup)
+    if (!user) {
+      user = new User({
+        email,
+        googleId,
+        name,
+        username: null // let user set it later
+      });
+      await user.save();
+    }
+
+    // 4. Respond with user info or token (no password involved)
+    res.status(200).json({
+      message: 'Google login successful',
+      userId: user._id,
+      email: user.email,
+      username: user.username
+    });
+  } catch (err) {
+    console.error('Google login error:', err.message);
+    res.status(401).json({ message: 'Google login failed' });
+  }
+});
+module.exports = router;
