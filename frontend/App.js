@@ -10,8 +10,7 @@ export default function App() {
       alignItems: 'center', 
       backgroundColor: '#f0f0f0' 
     }}>
-      <Text style={{ fontSize: 20 }}>🎉 Expo Go is working!?</Text>
-      <Text>hello {name}</Text>
+      <Text style={{ fontSize: 20 }}>🎉 Expo Go is working!</Text>
       <StatusBar style="auto" />
     </View>
   );
