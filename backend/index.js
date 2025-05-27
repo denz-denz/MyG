@@ -1,13 +1,18 @@
-console.log('this is the right file');
+console.log("this is the right file lol!!!")
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const app = express();
 dotenv.config(); // Load environment variables
-const authRoutes = require('./routes/authRoutes');
 app.use(express.json());
+
+const authRoutes = require('./routes/authRoutes');
+const workoutRoutes = require('./routes/workoutRoutes');
+
 app.use('/auth', authRoutes);
-// 🔌 Connect to MongoDB
+app.use('/workout', workoutRoutes);
+
+//  Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -19,6 +24,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 app.listen(3000, () => {
   console.log('🚀 Server running on http://localhost:3000');
 });
-console.log("Using Google Client ID:", process.env.GOOGLE_CLIENT_ID);
+
 
 

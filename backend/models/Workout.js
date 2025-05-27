@@ -1,39 +1,34 @@
 const mongoose = require('mongoose');
+console.log("Workout type:", typeof Workout)
+const exerciseSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    sets: {
+        type: Number,
+        required: true
+    },
+    reps: [{
+        type: Number,
+        required: true
+    }],
+    weight: [{
+        type: Number,
+        required: true
+    }]
+});
 const WorkoutSchema = new mongoose.Schema({
     userId:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User', //links to User in User.js
         required: true},  
     date: {
-        type: String,
-        required: true
+        type: Date,
+        default: Date.now
     },
-    exercises: [
-        {
-            name: { type: String, required:true},
-            sets: {type: Number,
-                    validate: {
-                        validator: function (val) {
-                            return val.length > 0;
-                        },
-                        message: 'Number of sets must exceed 0.'
-                    }
-                }, 
-            reps: {type: [Number], 
-                    validate: {
-                        validator: function (val) {
-                          return val.length === this.sets;
-                        },
-                        message: 'Number of reps must match the number of sets.'
-                      }
-                },
-            weight: {type: [Number],  validate: {
-                    validator: function (val) {
-                      return val.length === this.sets;
-                    },
-                    message: 'Number of weights must match the number of sets.'
-                  }
-            }
-        }
-    ]
+    startTime: {type: Date, default: Date.now},
+    endTime: { type: Date},
+    exercises: [exerciseSchema]
     });
+module.exports = mongoose.model('Workout', WorkoutSchema);
