@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     username: { type: String, sparse: true, unique: true }, //optional
     email: {type: String, required: true, unique: true, match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address'] },
-    password: { type: String, required: true },
-    googleId: {type: String}
+    password: { type: String }, //optional if google-login
+    googleId: {type: String} //optional if manual-login
   });
 module.exports = mongoose.model('User', UserSchema);

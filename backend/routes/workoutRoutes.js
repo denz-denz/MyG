@@ -1,15 +1,47 @@
 const express = require('express');
 const Workout = require('../models/Workout');
 const router = express.Router();
+
+function calculateExerciseVolume(exercise) {
+    let exerciseVolume = 0;
+    if (!exercise.reps || !exercise.weights || exercise.reps.length !== exercise.weights.length) {
+        return 0; // or throw an error
+    }
+    for (let i = 0; i < exercise.reps.length; i++){
+        const rep = exercise.reps[i];
+        const weight = exercise.weights[i];
+        exerciseVolume += rep * weight
+    }
+    return exerciseVolume;
+  }
+function calculateWorkoutVolume(exercises) {
+    let totalWorkoutVolume = 0;
+    for (const exercise of exercises) {
+        console.log("🔍 Checking exercise:", exercise.name);
+        console.log("  reps:", exercise.reps);
+        console.log("  weights:", exercise.weights);
+
+        const volume = calculateExerciseVolume(exercise);
+        console.log("  ➤ Calculated volume:", volume);
+
+        totalWorkoutVolume += volume;
+    }
+    console.log(totalWorkoutVolume);
+    return totalWorkoutVolume;
+}
+  
+  
 //start workout
 router.post('/start', async (req,res) => {
+    console.log("start path hit");
     const {userId, date} = req.body;
+    console.log(date);
     try {
         if (!userId) {
             return res.status(400).json({message: "invalid user!"});
         }
         //create empty workout
-        const workout = new Workout({userId, date: date?new Date(date): new Date(), startTime:new Date, exercises: []});
+        const workout = new Workout({userId, date: date?new Date(date): new Date(), startTime:new Date(), exercises: []});
         await workout.save();
         res.status(201).json({
             message: "Workout session started",
@@ -26,38 +58,45 @@ router.post('/start', async (req,res) => {
 //add exercises
 router.patch('/:id/add-exercise', async (req,res)=> {
     const {name,sets,reps,weights} = req.body;
+    //console.log("RECEIVED:", { reps, weights });
+    //console.log("FULL req.body:", req.body);
     if (!name || !sets || !Array.isArray(reps) || !Array.isArray(weights)) {
         return res.status(400).json({ message: "Invalid exercise added!" });
     }
     else if (sets <= 0 || reps.length <= 0 || weights.length <= 0) {
         return res.status(400).json({message: "Invalid exercise data!"});
     }
-    else if (reps.length != sets) {
+    else if (reps.length != sets || reps.some(num=>num<0)) {
         return res.status(400).json({message: "Invalid rep data"});
     }
-    else if (weights.length != sets) {
+    else if (weights.length != sets || weights.some(num=>num<0)) {
         return res.status(400).json({message: "Invalid weight data"});
     }
     
     try {
-        const updatedWorkout = await Workout.findByIdAndUpdate(req.params.id, {
-            $push: {
-                exercises: { name, sets, reps, weights }
-              }
-            },
-            {new: true}
-        );
-        if (!updatedWorkout) {
+        //const workout = await Workout.findById(req.params.id);
+        const workout = await Workout.findById(req.params.id);
+        if (!workout) {
             return res.status(404).json({ message: "Workout not found!" });
         }
+        const newExercise = {name, sets, reps, weights};
+        newExercise.exerciseVolume = calculateExerciseVolume(newExercise);
+        /*if (!updatedWorkout) {
+            return res.status(404).json({ message: "Workout not found!" });
+        }*/
+        workout.exercises.push(newExercise);
+        workout.totalVolume = calculateWorkoutVolume(workout.exercises);
+        await workout.save();
         res.status(200).json({
             message: "Exercise added successfully",
-            workout: updatedWorkout
+            exerciseVolume: newExercise.exerciseVolume,
+            workoutVolume: workout.totalVolume,
+            workout: workout
           });
     }
     catch (err) {
         console.error("Error adding exercise:", err.message);
-    res.status(500).json({ message: "Failed to add exercise", error: err.message });
+        res.status(500).json({ message: "Failed to add exercise", error: err.message });
     }
 });
 
@@ -81,6 +120,7 @@ router.patch('/:id/remove-exercise', async (req,res) => {
         await workout.save();
         res.status(200).json({
             message: "Exercise removed!",
+            currentWorkoutVolume: calculateWorkoutVolume(workout.exercises),
             workout
         });
     }
@@ -118,7 +158,8 @@ router.patch('/:id/log', async (req, res) => {
         //const workout = new Workout({userId, date:date?new Date(date):Date.now, exercises});
         workout.endTime = new Date();
         const durationMs = workout.endTime - workout.startTime;
-        const duration = durationMs/60000
+        const duration = durationMs/60000;
+        const workoutVolume = calculateWorkoutVolume(workout.exercises);
         await workout.save();
         res.status(201).json({
             message: "Workout logged successfully!",
@@ -126,6 +167,7 @@ router.patch('/:id/log', async (req, res) => {
             startTime: workout.startTime, 
             endTime: workout.endTime,
             duration: duration,
+            workoutVolume: workoutVolume,
             exercises: workout.exercises
           });
     }

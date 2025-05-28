@@ -11,13 +11,13 @@ router.post('/signup', async (req, res) => {
         //check if email in use
         const existingUserEmail = await User.findOne({email});
         if (existingUserEmail) {
-            return res.status(400).json({ message: 'Email already in use' });
+            return res.status(400).json({ message: "Email already in use" });
         }
         //check if username in use
         if (username) {
             const existingUserName = await User.findOne({username});
             if (existingUserName) {
-                return res.status(400).json({ message: 'username already in use' });
+                return res.status(400).json({ message: "username already in use" });
             }
         }
         //create hashed password
@@ -26,15 +26,16 @@ router.post('/signup', async (req, res) => {
         const newUser = new User({username: username, email: email, password: passwordHash});
         //save to db
         await newUser.save();
+        console.log("signup successful on backend")
         res.status(201).json({
-            message: 'Signup successful',
+            message: "Signup successful",
             userId: newUser._id,
             email: newUser.email,
             username: newUser.username
           });
     }
     catch (err) {
-        res.status(500).json({ message: 'Server error', error: err.message });
+        res.status(500).json({ message: "Server error", error: err.message });
       }
         
     });
@@ -46,33 +47,32 @@ router.post('/manual-login' , async (req, res) => {
     // 1. Find the user by email
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: 'User not found' });
+            return res.status(400).json({ message: "User not found" });
         }
 
     // 2. Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Incorrect password' });
+      return res.status(401).json({ message: "Incorrect password" });
     }
 
     // 3. Return success (you can add token logic later)
     res.status(200).json({
-      message: 'Login successful',
+      message: "Login successful",
       userId: user._id,
       email: user.email
     });
 
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
 //google login/signup route
 router.post('/google-login', async (req,res)=> {
   console.log("📩 /auth/google-login was hit");
-
   const { idToken } = req.body;
-
+  console.log("📨 Received Google ID Token:", idToken);
   try {
     // 1. Verify the token
     const ticket = await client.verifyIdToken({
@@ -90,24 +90,23 @@ router.post('/google-login', async (req,res)=> {
     // 3. If not, create a new user (Google signup)
     if (!user) {
       user = new User({
-        email,
-        googleId,
-        name,
-        username: null // let user set it later
+        username:name,
+        email:email,
+        googleId:googleId
       });
       await user.save();
     }
 
     // 4. Respond with user info or token (no password involved)
     res.status(200).json({
-      message: 'Google login successful',
+      message: "Google login successful",
       userId: user._id,
       email: user.email,
       username: user.username
     });
   } catch (err) {
-    console.error('Google login error:', err.message);
-    res.status(401).json({ message: 'Google login failed' });
+    console.error("Google login error:", err.message);
+    res.status(401).json({ message: "Google login failed" });
   }
 });
 module.exports = router;
