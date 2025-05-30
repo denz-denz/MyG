@@ -42,6 +42,7 @@ router.post('/signup', async (req, res) => {
     
 //manual login route
 router.post('/manual-login' , async (req, res) => {
+    console.log('login route hit');
     const { email, password } = req.body;
     try {
     // 1. Find the user by email
@@ -53,6 +54,7 @@ router.post('/manual-login' , async (req, res) => {
     // 2. Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('incorrect password');
       return res.status(401).json({ message: "Incorrect password" });
     }
 
@@ -62,8 +64,10 @@ router.post('/manual-login' , async (req, res) => {
       userId: user._id,
       email: user.email
     });
+    console.log('login done');
 
   } catch (err) {
+    console.error(err.message);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });

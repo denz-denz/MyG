@@ -29,8 +29,7 @@ function calculateWorkoutVolume(exercises) {
     console.log(totalWorkoutVolume);
     return totalWorkoutVolume;
 }
-  
-  
+
 //start workout
 router.post('/start', async (req,res) => {
     console.log("start path hit");
@@ -175,5 +174,36 @@ router.patch('/:id/log', async (req, res) => {
         console.error("error logging workout:", err.message);
         res.status(500).json({message: "Failed to log workout!", error: err.message});
     }
+});
+router.get('/:userId/:exerciseName/progress', async (req,res) => {
+    const {userId, exerciseName} = req.params;
+    try{
+        const allWorkouts = await Workout.find({userId});
+        if (!allWorkouts) {
+            return res.status(400).json({message: "no workout logged yet!"});
+        }
+        if (!userId) {
+            return res.status(400).json({message: "invalid UserId"});
+        }
+        const progress = {};
+        allWorkouts.forEach(workout=>{
+            const date = workout.date.toISOString().split('T')[0];
+            workout.exercises.forEach(ex => {
+                if (ex.name == exerciseName) {
+                    const volume = ex.exerciseVolume;
+                    progress[date] = (progress[date] || 0) + volume;
+                }
+            })
+        });
+        const formattedProgress = Object.entries(progress).map(([date, volume]) => ({ date, volume }));
+        formattedProgress.sort((a,b)=>new Date(a.date)-new Date(b.date));
+        console.log(formattedProgress);
+        res.json(formattedProgress);
+    }
+    catch (err) {
+        console.error(err.message);
+        res.status(500).json({message: 'failed to retrieve exercise progress'});
+    }
+   
 });
 module.exports = router;
