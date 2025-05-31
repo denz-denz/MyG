@@ -14,7 +14,7 @@ struct ContentView: View {
                 .scaledToFit()
                 .frame(width: 175, height: 150)
             
-            // Title
+            // Titlei ju
             Text("Ready to take that first step?")
                 .font(.title2)
                 .fontWeight(.semibold)
