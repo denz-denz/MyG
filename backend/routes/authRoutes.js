@@ -113,4 +113,57 @@ router.post('/google-login', async (req,res)=> {
     res.status(401).json({ message: "Google login failed" });
   }
 });
+
+const crypto = require('crypto'); // to generate random token
+
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "No user with that email." });
+
+    // generate token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 3600000); // 1 hour to expire
+
+    // save to user
+    user.resetPasswordToken = token;
+    user.resetPasswordExpiry = expiry;
+    await user.save();
+
+    // for now, return link (in production, send email)
+    const resetLink = `http://localhost:3000/auth/reset-password/${token}`;
+    res.json({ message: "Password reset link generated", resetLink });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+router.post('/reset-password/:token', async (req, res)=> {
+  const {token} = req.params;
+  console.log(token);
+  const {newPassword} = req.body;
+  try {
+    const user = await User.findOne({resetPasswordToken:token,
+      resetPasswordExpiry: {$gt: new Date()}
+    });
+    //console.log(user);
+    console.log(user.resetPasswordToken);
+    if (!user) {
+      console.log("failing");
+      return res.status(400).json({message: "Invalid or expired token"});
+    }
+    const passwordHash = await bcrypt.hash(newPassword,10);
+    user.password = passwordHash;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
+    await user.save();
+    res.json({message: "Password reset successfully"});
+  }
+  catch (err) {
+    console.error(err.message);
+    res.status(500).json({message: "Server Error: ", error: err.message});
+  }
+});
 module.exports = router;
