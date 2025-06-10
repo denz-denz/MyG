@@ -1,6 +1,8 @@
 const express = require('express');
 const { OpenAI } = require('openai');
+const mongoose = require('mongoose');
 const ChatHistory = require('../models/ChatHistory');
+const Workout = require('../models/Workout');
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Use .env 
 
@@ -14,19 +16,50 @@ router.post('/ai-coach', async (req,res)=>{
     }
     try{ 
         let chatHist = await ChatHistory.findOne({userId});
+        const allWorkouts = await Workout.find({userId: userId});
+        console.log(allWorkouts);
+        const recentWorkouts = allWorkouts.sort((a,b)=>b.date - a.date).slice(0,20);
+        console.log(recentWorkouts);
+        let formattedHistory;
+        if (recentWorkouts.length === 0) {
+            formattedHistory = "no workouts logged yet";
+        }
+        else {
+            formattedHistory = recentWorkouts.map(w => {
+            const date = new Date(w.date).toLocaleDateString();
+            const exerciseList = w.exercises.map(e => {
+                const sets = e.reps.map((reps, i) => {
+                  const weight = e.weights[i] ?? '?';
+                  return `${reps} reps @ ${weight}kg`;
+                }).join(', ');
+                return `- ${e.name}: ${sets}`;
+              }).join('\n');
+            return `Workout on ${date}:\n${exerciseList}`;
+          }).join('\n\n');
+        }
         if (!chatHist) {
             chatHist = new ChatHistory({userId, messages:[]}); //first question
+            await chatHist.save();
         }
-        const systemPrompt = `You are a helpful science-based fitness assistant looking to maximise hypertrophy. As a science-based lifter, you are looking to maximise muscle growth through mechanical tension and minimise central nervous system fatigue, and suggest exercises that are stable as well as easy to progressive overload. For example, exercises like the squat, bench and deadlift would be considered suboptimal unless the user really wants to do it or is a powerlifter as those exercises are very taxing on the central nervous sytem, and are not as stable as compared to using the smith or cables. Also, try to match muscular leverages and resistance profiles to suggest good exercises that best fits the resistance profile of the target muscle. Try to give good ordering of exercises too, so if the user aims to grow his shoulders, recommend doing shoulder exercises as his first exercise. Advise based on this chat history: ${chatHist.messages.map(m=>`${m.role.toUpperCase()}: ${m.content}`).join('\n')}`;
+        console.log(formattedHistory);
+        const formattedChatHistory = (chatHist?.messages || [])
+            .map(m => `${m.role}: ${m.content}`)
+            .join('\n');
+        console.log(formattedChatHistory);
+        const systemPrompt = "You are a helpful science-based fitness assistant looking to maximise hypertrophy. As a science-based lifter, you are looking to maximise muscle growth through mechanical tension and minimise central nervous system fatigue, and suggest exercises that are stable as well as easy to progressive overload. For example, exercises like the squat, bench and deadlift would be considered suboptimal unless the user really wants to do it or is a powerlifter as those exercises are very taxing on the central nervous sytem, and are not as stable as compared to using the smith or cables. Also, try to match muscular leverages and resistance profiles to suggest good exercises that best fits the resistance profile of the target muscle. Try to give good ordering of exercises too, so for example if the user aims to grow his shoulders, recommend doing shoulder exercises as his first exercise.";
         const aiResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
             { role: "system", content: systemPrompt },
+            { role: "user", content: `here is my recent workout history:\n\n${formattedHistory}`},
+            { role: "user", content: `here are my recent chat history:\n\n${formattedChatHistory}`},
             { role: "user", content: question }
         ],
         temperature: 0.7 //creativity scale
     });
         chatHist.messages.push({role:'user', content:question});
+        await chatHist.save();
+        console.log(chatHist.messages);
         res.json({response: aiResponse.choices[0].message.content});
     }
     catch (err) {

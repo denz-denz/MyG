@@ -1,6 +1,8 @@
 const express = require('express');
 const Workout = require('../models/Workout');
+const mongoose = require('mongoose');
 const router = express.Router();
+
 
 function calculateExerciseVolume(exercise) {
     let exerciseVolume = 0;
@@ -175,6 +177,20 @@ router.patch('/:id/log', async (req, res) => {
         res.status(500).json({message: "Failed to log workout!", error: err.message});
     }
 });
+router.get('/:userId', async (req, res) => {
+    const { userId } = req.params;
+  
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid userId" });
+    }
+  
+    try {
+      const workouts = await Workout.find({ userId: new mongoose.Types.ObjectId(userId) });
+      res.json(workouts);
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  });
 router.get('/:userId/:exerciseName/progress', async (req,res) => {
     const {userId, exerciseName} = req.params;
     try{
