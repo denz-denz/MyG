@@ -27,8 +27,6 @@ const WorkoutSchema = new mongoose.Schema({
         type: Date,
         default: new Date()
     },
-    startTime: {type: Date, default: new Date()},
-    endTime: { type: Date},
     exercises: [exerciseSchema],
     workoutVolume: {type: Number, default: 0}
     });

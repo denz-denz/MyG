@@ -1,4 +1,4 @@
-console.log("this is the right file lol!!!");
+//console.log("this is the right file lol!!!");
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -12,9 +12,11 @@ const authRoutes = require('./routes/authRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
+
 app.use('/auth', authRoutes);
 app.use('/workout', workoutRoutes);
 app.use('/ai', aiRoutes);
+
 
 //  Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {

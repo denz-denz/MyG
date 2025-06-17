@@ -19,16 +19,9 @@ function calculateExerciseVolume(exercise) {
 function calculateWorkoutVolume(exercises) {
     let totalWorkoutVolume = 0;
     for (const exercise of exercises) {
-        console.log("🔍 Checking exercise:", exercise.name);
-        console.log("  reps:", exercise.reps);
-        console.log("  weights:", exercise.weights);
-
         const volume = calculateExerciseVolume(exercise);
-        console.log("  ➤ Calculated volume:", volume);
-
         totalWorkoutVolume += volume;
     }
-    console.log(totalWorkoutVolume);
     return totalWorkoutVolume;
 }
 
@@ -42,7 +35,7 @@ router.post('/start', async (req,res) => {
             return res.status(400).json({message: "invalid user!"});
         }
         //create empty workout
-        const workout = new Workout({userId, date: date?new Date(date): new Date(), startTime:new Date(), exercises: []});
+        const workout = new Workout({userId, date: date?new Date(date): new Date(), exercises: []});
         await workout.save();
         res.status(201).json({
             message: "Workout session started",
@@ -157,19 +150,13 @@ router.patch('/:id/log', async (req, res) => {
             return res.status(400).json({message: "Invalid workout logged!"});
         }
         //const workout = new Workout({userId, date:date?new Date(date):Date.now, exercises});
-        workout.endTime = new Date();
-        const durationMs = workout.endTime - workout.startTime;
-        const duration = durationMs/60000;
         const workoutVolume = calculateWorkoutVolume(workout.exercises);
         await workout.save();
         res.status(201).json({
             message: "Workout logged successfully!",
             workoutId: workout._id,
-            startTime: workout.startTime, 
-            endTime: workout.endTime,
-            duration: duration,
-            workoutVolume: workoutVolume,
-            exercises: workout.exercises
+            exercises: workout.exercises,
+            workoutVolume: workoutVolume
           });
     }
     catch (err) {
@@ -213,7 +200,6 @@ router.get('/:userId/:exerciseName/progress', async (req,res) => {
         });
         const formattedProgress = Object.entries(progress).map(([date, volume]) => ({ date, volume }));
         formattedProgress.sort((a,b)=>new Date(a.date)-new Date(b.date));
-        console.log(formattedProgress);
         res.json(formattedProgress);
     }
     catch (err) {
