@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const app = express();
 const cors = require("cors");
+const photoRoutes = require('./routes/photoRoutes');
 app.use(cors());
 dotenv.config(); // Load environment variables
 app.use(express.json());
@@ -16,6 +17,7 @@ const aiRoutes = require('./routes/aiRoutes');
 app.use('/auth', authRoutes);
 app.use('/workout', workoutRoutes);
 app.use('/ai', aiRoutes);
+app.use('/smartscan', photoRoutes);
 
 
 //  Connect to MongoDB

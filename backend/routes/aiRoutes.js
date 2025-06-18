@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const ChatHistory = require('../models/ChatHistory');
 const Workout = require('../models/Workout');
 const router = express.Router();
+require('dotenv').config();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Use .env 
 
 router.post('/ai-coach', async (req,res)=>{
