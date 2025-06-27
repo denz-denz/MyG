@@ -28,19 +28,19 @@ function calculateWorkoutVolume(exercises) {
 //start workout
 router.post('/start', async (req,res) => {
     console.log("start path hit");
-    const {userId, date} = req.body;
-    console.log(date);
+    const {name, userId, date} = req.body;
+    //console.log(date);
     try {
         if (!userId) {
             return res.status(400).json({message: "invalid user!"});
         }
         //create empty workout
-        const workout = new Workout({userId, date: date?new Date(date): new Date(), exercises: []});
+        const workout = new Workout({name, userId, date: date?new Date(date): new Date(), exercises: []});
         await workout.save();
-        res.status(201).json({
+         res.status(201).json({
             message: "Workout session started",
             workoutId: workout._id,
-            date: workout.date
+            workout: workout
           });
     }
     catch (err) {
@@ -51,6 +51,7 @@ router.post('/start', async (req,res) => {
 
 //add exercises
 router.patch('/:id/add-exercise', async (req,res)=> {
+    console.log("adding exercise path hit");
     const {name,sets,reps,weights} = req.body;
     //console.log("RECEIVED:", { reps, weights });
     //console.log("FULL req.body:", req.body);
@@ -70,21 +71,20 @@ router.patch('/:id/add-exercise', async (req,res)=> {
     try {
         //const workout = await Workout.findById(req.params.id);
         const workout = await Workout.findById(req.params.id);
+        const normalisedName = name.trim().toLowerCase();
         if (!workout) {
             return res.status(404).json({ message: "Workout not found!" });
         }
-        const newExercise = {name, sets, reps, weights};
+        const newExercise = {normalisedName, sets, reps, weights};
         newExercise.exerciseVolume = calculateExerciseVolume(newExercise);
         /*if (!updatedWorkout) {
             return res.status(404).json({ message: "Workout not found!" });
         }*/
         workout.exercises.push(newExercise);
-        workout.totalVolume = calculateWorkoutVolume(workout.exercises);
+        workout.workoutVolume += newExercise.exerciseVolume;
         await workout.save();
         res.status(200).json({
             message: "Exercise added successfully",
-            exerciseVolume: newExercise.exerciseVolume,
-            workoutVolume: workout.totalVolume,
             workout: workout
           });
     }
@@ -114,8 +114,7 @@ router.patch('/:id/remove-exercise', async (req,res) => {
         await workout.save();
         res.status(200).json({
             message: "Exercise removed!",
-            currentWorkoutVolume: calculateWorkoutVolume(workout.exercises),
-            workout
+            workout:workout
         });
     }
     catch (err) {
@@ -141,6 +140,7 @@ router.delete('/:id', async (req,res) => {
 
 //log workout 
 router.patch('/:id/log', async (req, res) => {
+    console.log("log path hit");
     try {
         const workout = await Workout.findById(req.params.id);
         if (!workout){
@@ -155,8 +155,7 @@ router.patch('/:id/log', async (req, res) => {
         res.status(201).json({
             message: "Workout logged successfully!",
             workoutId: workout._id,
-            exercises: workout.exercises,
-            workoutVolume: workoutVolume
+            workout: workout
           });
     }
     catch (err) {
@@ -164,6 +163,7 @@ router.patch('/:id/log', async (req, res) => {
         res.status(500).json({message: "Failed to log workout!", error: err.message});
     }
 });
+//get all workouts done by user
 router.get('/:userId', async (req, res) => {
     const { userId } = req.params;
   
@@ -178,6 +178,7 @@ router.get('/:userId', async (req, res) => {
       res.status(500).json({ message: "Server error", error: err.message });
     }
   });
+//get specific exercise progress
 router.get('/:userId/:exerciseName/progress', async (req,res) => {
     const {userId, exerciseName} = req.params;
     try{
@@ -192,7 +193,7 @@ router.get('/:userId/:exerciseName/progress', async (req,res) => {
         allWorkouts.forEach(workout=>{
             const date = workout.date.toISOString().split('T')[0];
             workout.exercises.forEach(ex => {
-                if (ex.name == exerciseName) {
+                if (ex.name.trim().toLowerCase() == exerciseName.trim().toLowerCase()) {
                     const volume = ex.exerciseVolume;
                     progress[date] = (progress[date] || 0) + volume;
                 }

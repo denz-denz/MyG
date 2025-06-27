@@ -19,6 +19,7 @@ const exerciseSchema = new mongoose.Schema({
     exerciseVolume: {type: Number, default: 0}
 });
 const WorkoutSchema = new mongoose.Schema({
+    name:{type: String, required: true},
     userId:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User', //links to User in User.js
@@ -30,4 +31,12 @@ const WorkoutSchema = new mongoose.Schema({
     exercises: [exerciseSchema],
     workoutVolume: {type: Number, default: 0}
     });
+    WorkoutSchema.set('toJSON', {
+        virtuals: true,          // include virtuals like `id`
+        versionKey: false,       // removes `__v`
+        transform: function (doc, ret) {
+          ret.id = ret._id.toString();  // create `id` from `_id`
+          delete ret._id;               // remove `_id`
+        }
+      });
 module.exports = mongoose.model('Workout', WorkoutSchema);

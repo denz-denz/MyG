@@ -18,7 +18,7 @@ router.post('/photo-macros', upload.single('image'), async (req, res) => {
     const foodItem = labels[0] || 'unknown food';
 
     const gptPrompt = `
-Estimate the macros for a portion of ${foodItem} commonly eaten in Singapore. Return only JSON like: {"dish":"...", "calories":123, "protein":10, "carbs":15, "fat":5}
+Estimate the macros for this given portion of ${foodItem} which is eaten in Singapore. Return only JSON like: {"dish":"...", "calories":123, "protein":10, "carbs":15, "fat":5. Ensure that calories is correct and it is calculated by multiplying carbs and protein in grams by 4 and fat in grams by 9 and summing them up.}
 `;
 
     const aiResponse = await openai.chat.completions.create({
