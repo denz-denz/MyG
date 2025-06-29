@@ -1,15 +1,19 @@
+//
+//  MacroFriendlyMapView.swift
+//  MyG
+//
+//  Created by Dylan Teo on 29/5/25.
+//
 import SwiftUI
 import MapKit
 import CoreLocation
 
-// Struct for Identified Map Items
 struct IdentifiedMapItem: Identifiable {
     let id = UUID()
     let name: String
     let coordinate: CLLocationCoordinate2D
 }
 
-// Location Manager for permission and user location
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var userLocation: CLLocation?
     @Published var authorizationStatus: CLAuthorizationStatus
@@ -29,7 +33,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         self.authorizationStatus = manager.authorizationStatus
-        if authorizationStatus == .authorizedWhenInUse || .authorizedAlways == authorizationStatus {
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
             manager.startUpdatingLocation()
         }
     }
@@ -41,13 +45,12 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
-// Main Map View
 struct MacroFriendlyMapView: View {
     @StateObject private var locManager = LocationManager()
 
     @State private var cameraPosition = MapCameraPosition.region(
         MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 1.3521, longitude: 103.8198), // Singapore
+            center: CLLocationCoordinate2D(latitude: 1.3521, longitude: 103.8198),
             span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)
         )
     )
@@ -56,13 +59,21 @@ struct MacroFriendlyMapView: View {
 
     var body: some View {
         ZStack {
-            Map(position: $cameraPosition, interactionModes: .all, showsUserLocation: true) {
+            Map(position: $cameraPosition, interactionModes: .all) {
+                // Show user location dot
+                UserAnnotation()
+
+                // Show eatery markers
                 ForEach(places) { item in
                     Marker(item.name, coordinate: item.coordinate)
                 }
             }
             .ignoresSafeArea()
+            .mapControls {
+                MapUserLocationButton()
+            }
 
+            // Permission prompt
             if locManager.authorizationStatus == .notDetermined {
                 Color.black.opacity(0.4)
                 VStack(spacing: 16) {
@@ -110,7 +121,6 @@ struct MacroFriendlyMapView: View {
                 let descHTML = props["Description"] as? String
             else { return nil }
 
-            // Extract the actual NAME from the Description HTML using regex
             let regex = try? NSRegularExpression(pattern: "<th>NAME</th> *<td>(.*?)</td>", options: [])
             let range = NSRange(descHTML.startIndex..<descHTML.endIndex, in: descHTML)
             let match = regex?.firstMatch(in: descHTML, options: [], range: range)
@@ -119,7 +129,6 @@ struct MacroFriendlyMapView: View {
             if let match = match, let nameRange = Range(match.range(at: 1), in: descHTML) {
                 name = String(descHTML[nameRange])
             } else {
-                // fallback to LANDYADDRESSPOINT or generic label
                 name = props["LANDYADDRESSPOINT"] as? String ?? "Healthy Eatery"
             }
 
@@ -129,8 +138,8 @@ struct MacroFriendlyMapView: View {
 
         print("✅ Loaded \(places.count) eateries from GeoJSON")
     }
-
 }
+
 
 // Preview
 struct MacroFriendlyMapView_Previews: PreviewProvider {
