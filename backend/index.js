@@ -1,5 +1,6 @@
 //console.log("this is the right file lol!!!");
 const express = require('express');
+const router = express.Router();
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const app = express();
@@ -35,6 +36,9 @@ app.listen(PORT, () => {
 });
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
+});
+router.get('/ping', (req,res)=> {
+  res.status(200).json({mesage:'pong'});
 });
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err.stack);
