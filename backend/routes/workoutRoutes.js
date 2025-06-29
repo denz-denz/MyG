@@ -182,6 +182,8 @@ router.get('/:userId', async (req, res) => {
 //get specific exercise progress
 router.get('/:userId/:exerciseName/progress', async (req,res) => {
     console.log("progress path hit");
+    console.log("UserID:", userId);
+    console.log("Exercise Name:", exerciseName);
     const {userId, exerciseName} = req.params;
     const normalize = str => str.replace(/\s+/g, '').toLowerCase();
     try{
