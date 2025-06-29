@@ -37,9 +37,7 @@ app.listen(PORT, () => {
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
-router.get('/ping', (req,res)=> {
-  res.status(200).json({mesage:'pong'});
-});
+
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err.stack);
   res.status(500).json({ message: "Internal server error", error: err.message });

@@ -179,6 +179,9 @@ router.get('/:userId', async (req, res) => {
       res.status(500).json({ message: "Server error", error: err.message });
     }
   });
+router.get('/ping', (req,res)=> {
+    res.status(200).json({mesage:'pong'});
+});
 //get specific exercise progress
 router.get('/:userId/:exerciseName/progress', async (req,res) => {
     const {userId, exerciseName} = req.params;
