@@ -53,8 +53,8 @@ router.post('/start', async (req,res) => {
 router.patch('/:id/add-exercise', async (req,res)=> {
     console.log("adding exercise path hit");
     const {name,sets,reps,weights} = req.body;
-    //console.log("RECEIVED:", { reps, weights });
-    //console.log("FULL req.body:", req.body);
+    console.log("RECEIVED:", { reps, weights });
+    console.log("FULL req.body:", req.body);
     if (!name || !sets || !Array.isArray(reps) || !Array.isArray(weights)) {
         return res.status(400).json({ message: "Invalid exercise added!" });
     }
@@ -69,19 +69,19 @@ router.patch('/:id/add-exercise', async (req,res)=> {
     }
     
     try {
-        //const workout = await Workout.findById(req.params.id);
         const workout = await Workout.findById(req.params.id);
         const normalisedName = name.trim().toLowerCase();
         if (!workout) {
             return res.status(404).json({ message: "Workout not found!" });
         }
-        const newExercise = {normalisedName, sets, reps, weights};
+        const newExercise = {name:normalisedName, sets, reps, weights};
         newExercise.exerciseVolume = calculateExerciseVolume(newExercise);
         /*if (!updatedWorkout) {
             return res.status(404).json({ message: "Workout not found!" });
         }*/
         workout.exercises.push(newExercise);
         workout.workoutVolume += newExercise.exerciseVolume;
+        console.log(workout.exercises)
         await workout.save();
         res.status(200).json({
             message: "Exercise added successfully",
@@ -151,6 +151,7 @@ router.patch('/:id/log', async (req, res) => {
         }
         //const workout = new Workout({userId, date:date?new Date(date):Date.now, exercises});
         const workoutVolume = calculateWorkoutVolume(workout.exercises);
+        console.log(workout.exercises)
         await workout.save();
         res.status(201).json({
             message: "Workout logged successfully!",
@@ -180,20 +181,25 @@ router.get('/:userId', async (req, res) => {
   });
 //get specific exercise progress
 router.get('/:userId/:exerciseName/progress', async (req,res) => {
+    console.log("progress path hit");
     const {userId, exerciseName} = req.params;
+    const normalize = str => str.replace(/\s+/g, '').toLowerCase();
     try{
         const allWorkouts = await Workout.find({userId});
+        
         if (!allWorkouts) {
+            console.log("no workout found");
             return res.status(400).json({message: "no workout logged yet!"});
         }
         if (!userId) {
+            console.log("invalid userId");
             return res.status(400).json({message: "invalid UserId"});
         }
         const progress = {};
         allWorkouts.forEach(workout=>{
             const date = workout.date.toISOString().split('T')[0];
             workout.exercises.forEach(ex => {
-                if (ex.name.trim().toLowerCase() == exerciseName.trim().toLowerCase()) {
+                if (normalize(ex.name) == normalize(exerciseName)) {
                     const volume = ex.exerciseVolume;
                     progress[date] = (progress[date] || 0) + volume;
                 }
@@ -201,6 +207,7 @@ router.get('/:userId/:exerciseName/progress', async (req,res) => {
         });
         const formattedProgress = Object.entries(progress).map(([date, volume]) => ({ date, volume }));
         formattedProgress.sort((a,b)=>new Date(a.date)-new Date(b.date));
+        console.log(formattedProgress);
         res.json(formattedProgress);
     }
     catch (err) {

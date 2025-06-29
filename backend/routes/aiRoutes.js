@@ -8,6 +8,7 @@ require('dotenv').config();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Use .env 
 
 router.post('/ai-coach', async (req,res)=>{
+    console.log("ai coach hit");
     const {userId, question} = req.body;
     if (!question){
         return res.status(400).json({message: "no question provided!"});
@@ -30,7 +31,7 @@ router.post('/ai-coach', async (req,res)=>{
             const date = new Date(w.date).toLocaleDateString();
             const exerciseList = w.exercises.map(e => {
                 const sets = e.reps.map((reps, i) => {
-                  const weight = e.weights[i] ?? '?';
+                  const weight = e.weights[i] ?? '0';
                   return `${reps} reps @ ${weight}kg`;
                 }).join(', ');
                 return `- ${e.name}: ${sets}`;
@@ -91,5 +92,65 @@ router.post('/macros-calculator', async (req,res)=>{
     }
 
 });
+router.post('/muscle-tier-analysis', async (req, res) => {
+    const { userId } = req.body;
+  
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId" });
+    }
+  
+    try {
+      const workouts = await Workout.find({ userId });
+      if (!workouts || workouts.length === 0) {
+        return res.status(404).json({ message: "No workouts found for this user" });
+      }
+  
+      // Format the workout history
+      const formattedHistory = workouts.map(w => {
+        const date = new Date(w.date).toLocaleDateString();
+        const exerciseList = w.exercises.map(e => {
+          const sets = e.reps.map((reps, i) => {
+            const weight = e.weights[i] ?? '0';
+            return `${reps} reps @ ${weight}kg`;
+          }).join(', ');
+          return `- ${e.name}: ${sets}`;
+        }).join('\n');
+        return `Workout on ${date}:\n${exerciseList}`;
+      }).join('\n\n');
+  
+      const systemPrompt = `
+  You are a hypertrophy-focused fitness AI coach.
+  Based on the following user's workout history, analyze which muscle groups are being trained the most. Eg, incline chest press would target upper chest and mid chest, wide grip rows would target upper back and lats. Note that a single exercise could target multiple muscle groups so adjust your rankings accordingly. For example, a person strong in shoulder press should have good front and side delts.
+  
+    Instructions:
+  1. Focus on upper chest, mid chest, upper back, lats, front delts, side delts, rear delts, biceps, triceps, quads, hamstrings, and core.
+  2. Classify each group into: "Elite" (most trained), "Intermediate" (moderate), or "Beginner" (least trained) and "Untouched" (untrained)
+  3. Output ONLY valid JSON like:
+  {
+    "upper chest": "Gold",
+    "mid chest": "Silver",
+    "upper back": "Bronze",
+    ...
+  }
+  
+  Workout History:
+  ${formattedHistory}
+  `;
+  
+      const aiResponse = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: systemPrompt }
+        ],
+        temperature: 0.7
+      });
+  
+      res.json({ response: aiResponse.choices[0].message.content });
+  
+    } catch (err) {
+      console.error("error in muscle-tier-analysis:", err.message);
+      res.status(500).json({ message: "Failed to analyze muscle group tiers", error: err.message });
+    }
+  });
 module.exports = router;
    
