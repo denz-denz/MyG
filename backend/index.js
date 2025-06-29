@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const app = express();
+const PORT = process.env.PORT || 3000;
 const cors = require("cors");
 const photoRoutes = require('./routes/photoRoutes');
 app.use(cors());
@@ -29,8 +30,8 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Start your server
-app.listen(3000, () => {
-  console.log('🚀 Server running on http://localhost:3000');
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on ${PORT}`);
 });
 
 
