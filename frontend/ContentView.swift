@@ -1,98 +1,109 @@
 import SwiftUI
-
+import GoogleSignIn
 struct ContentView: View {
+    @Binding var isSignedIn: Bool
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var username: String = ""
-    let googleClientID = "266407106880-eer110745r05osd92jb935b6m53lo2ah.apps.googleusercontent.com"
+    @State private var isLoginMode: Bool = false
+    @AppStorage("userId") var userId: String = ""
 
+    let googleClientID = "674979663593-k10o1u2c7qs7fkcbog5ii9ucoiu2s0f7.apps.googleusercontent.com"
     var body: some View {
         VStack(spacing: 20) {
-            // Logo (Make sure "MyG" is in Assets.xcassets)
             Image("MyG")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 175, height: 150)
-            
-            // Titlei ju
-            Text("Ready to take that first step?")
+            Text(isLoginMode ? "Welcome back!" : "Ready to take that first step?")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.center)
-
-            // Subtitle
             VStack(spacing: 4) {
-                Text("Create an account")
+                Text(isLoginMode ? "Log in to your account" : "Create an account")
                     .font(.subheadline)
                     .bold()
-                Text("Enter your email to sign up for this app")
+                Text(isLoginMode ? "Enter your credentials to continue" : "Enter your email to sign up for this app")
                     .font(.footnote)
                     .foregroundColor(.gray)
             }
-
-            // Email TextField
             TextField("email@domain.com", text: $email)
                 .padding()
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(10)
                 .keyboardType(.emailAddress)
                 .autocapitalization(.none)
-            
-            // Password
-            SecureField("Create a password", text: $password)
+            SecureField(isLoginMode ? "Password" : "Create a password", text: $password)
                 .padding()
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(10)
-            
-            //username
-            TextField("Username (optional)", text: $username)
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(10)
-                .autocapitalization(.none)
-
-            // Continue Button
+            if !isLoginMode {
+                TextField("Username (optional)", text: $username)
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                    .autocapitalization(.none)
+            }
             Button(action: {
-                sendSignupData(email: email, password: password, username: username)
+                if isLoginMode {
+                    sendLoginData(email: email, password: password) { returnedUserId in
+                        if let id = returnedUserId {
+                            DispatchQueue.main.async {
+                                userId = id // ✅ this stores it globally
+                                isSignedIn = true
+                            }
+                        }
+                    }
+                } else {
+                    sendSignupData(email: email, password: password, username: username) { returnedUserId in
+                        if let id = returnedUserId {
+                            DispatchQueue.main.async {
+                                userId = id // ✅ this stores it globally
+                                isSignedIn = true
+                            }
+                        }
+                    }
+                }
             }) {
-                Text("Continue")
+                Text(isLoginMode ? "Login" : "Continue")
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.black)
                     .cornerRadius(10)
             }
-
-            // Divider with "or"
             HStack {
                 Rectangle()
-                    .frame(height:1)
+                    .frame(height: 1)
                     .foregroundColor(Color.gray.opacity(0.4))
-                
                 Text("or")
                     .foregroundColor(.gray)
                     .padding(.horizontal)
-                
                 Rectangle()
-                    .frame(height:1)
+                    .frame(height: 1)
                     .foregroundColor(Color.gray.opacity(0.4))
             }
-
-            // Google Sign-In Button (Mock)
             Button(action: {
                 signInWithGoogle(clientID: googleClientID) { idToken in
                     guard let idToken = idToken else {
                         print("❌ No token returned from Google Sign-In")
                         return
                     }
-                
-                    sendGoogleTokenToBackend(idToken: idToken)
-                }
-            }) {
+
+                    sendGoogleTokenToBackend(idToken: idToken) { returnedUserId in
+                        if let id = returnedUserId {
+                                        DispatchQueue.main.async {
+                                            userId = id
+                                            isSignedIn = true
+                                        }
+                                    }
+                                }
+                            }
+                        }) {
                 HStack {
                     Image("g-logo")
                         .resizable()
-                        .frame(width:18, height:18)
+                        .frame(width: 18, height: 18)
                     Text("Continue with Google")
                 }
                 .foregroundColor(.black)
@@ -102,39 +113,27 @@ struct ContentView: View {
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.5)))
                 .cornerRadius(10)
             }
-/
-            // Apple Sign-In Button
             Button(action: {
-                // handle Apple sign-in
+                isLoginMode.toggle()
             }) {
-                HStack {
-                    Image(systemName: "applelogo")
-                    Text("Continue with Apple")
-                }
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.gray)
-                .cornerRadius(10)
+                Text(isLoginMode ? "Don't have an account? Sign up" : "Already have an account? Log in")
+                    .font(.footnote)
+                    .foregroundColor(.blue)
             }
-            /
-             
-            // Terms of Service & Privacy
             Text("By clicking continue, you agree to our Terms of Service and Privacy Policy")
                 .font(.caption)
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-
             Spacer()
         }
         .padding()
     }
 }
-
-func sendSignupData(email: String, password: String, username: String?) {
-    guard let url = URL(string: "https://5746-175-156-216-56.ngrok-free.app/auth/signup") else {
-        print("Invalid URL")
+func sendSignupData(email: String, password: String, username: String?, completion: @escaping (String?) -> Void) {
+    guard let url = URL(string: "https://aed5-175-156-215-114.ngrok-free.app/auth/signup") else {
+        print("Invalid signup URL")
+        completion(nil)
         return
     }
 
@@ -142,12 +141,10 @@ func sendSignupData(email: String, password: String, username: String?) {
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-    // Construct the body
     var body: [String: String] = [
         "email": email,
         "password": password
     ]
-
     if let username = username, !username.isEmpty {
         body["username"] = username
     }
@@ -155,61 +152,137 @@ func sendSignupData(email: String, password: String, username: String?) {
     do {
         request.httpBody = try JSONEncoder().encode(body)
     } catch {
-        print("Error encoding body: \(error)")
+        print("❌ Encoding error: \(error)")
+        completion(nil)
         return
     }
 
-    // Send request
     URLSession.shared.dataTask(with: request) { data, response, error in
         if let error = error {
-            print("❌ Request failed: \(error.localizedDescription)")
+            print("❌ Signup request failed: \(error.localizedDescription)")
+            completion(nil)
             return
         }
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            print("❌ Invalid response")
+        guard let data = data else {
+            print("❌ No data in signup response")
+            completion(nil)
             return
         }
 
-        print("✅ Status code: \(httpResponse.statusCode)")
-
-        if let data = data {
-            if let responseBody = String(data: data, encoding: .utf8) {
-                print("✅ Response body: \(responseBody)")
+        do {
+            let json = try JSONDecoder().decode([String: String].self, from: data)
+            if let userId = json["userId"] {
+                completion(userId)
+            } else {
+                print("❌ userId missing in signup response")
+                completion(nil)
             }
+        } catch {
+            print("❌ JSON decoding error: \(error)")
+            completion(nil)
         }
     }.resume()
 }
 
-func sendGoogleTokenToBackend(idToken: String) {
-    guard let url = URL(string: "https://5746-175-156-216-56.ngrok-free.app/auth/google-login/auth/google-login") else { return }
+func sendLoginData(email: String, password: String, completion: @escaping (String?) -> Void) {
+    guard let url = URL(string: "https://aed5-175-156-215-114.ngrok-free.app/auth/manual-login") else {
+        print("Invalid login URL")
+        completion(nil)
+        return
+    }
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    let body: [String: String] = [
+        "email": email,
+        "password": password
+    ]
 
-    let payload = ["id_token": idToken]
+    do {
+        request.httpBody = try JSONEncoder().encode(body)
+    } catch {
+        print("❌ Encoding error: \(error)")
+        completion(nil)
+        return
+    }
+
+    URLSession.shared.dataTask(with: request) { data, response, error in
+        if let error = error {
+            print("❌ Login request failed: \(error.localizedDescription)")
+            completion(nil)
+            return
+        }
+
+        guard let data = data else {
+            print("❌ No data in login response")
+            completion(nil)
+            return
+        }
+
+        do {
+            let json = try JSONDecoder().decode([String: String].self, from: data)
+            if let userId = json["userId"] {
+                completion(userId)
+            } else {
+                print("❌ userId missing in login response")
+                completion(nil)
+            }
+        } catch {
+            print("❌ JSON decoding error: \(error)")
+            completion(nil)
+        }
+    }.resume()
+}
+
+func sendGoogleTokenToBackend(idToken: String, completion: @escaping (String?) -> Void) {
+    guard let url = URL(string:
+        "https://aed5-175-156-215-114.ngrok-free.app/auth/google-login") else {
+        completion(nil)
+        return
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    let payload = ["idToken": idToken]
 
     do {
         request.httpBody = try JSONEncoder().encode(payload)
     } catch {
         print("❌ Failed to encode token")
+        completion(nil)
         return
     }
 
     URLSession.shared.dataTask(with: request) { data, response, error in
         if let error = error {
-            print("❌ Backend error: \(error)")
+            print("❌ Google login request failed: \(error)")
+            completion(nil)
             return
         }
 
-        if let data = data {
-            print("✅ Response: \(String(data: data, encoding: .utf8) ?? "")")
+        guard let data = data else {
+            print("❌ No data in Google login response")
+            completion(nil)
+            return
+        }
+
+        do {
+            let json = try JSONDecoder().decode([String: String].self, from: data)
+            if let userId = json["userId"] {
+                completion(userId)
+            } else {
+                print("❌ userId missing in Google login response")
+                completion(nil)
+            }
+        } catch {
+            print("❌ JSON decoding error: \(error)")
+            completion(nil)
         }
     }.resume()
 }
-
-import GoogleSignIn
 
 func signInWithGoogle(clientID: String, completion: @escaping (String?) -> Void) {
     guard let presentingVC = UIApplication.shared.connectedScenes
@@ -220,28 +293,26 @@ func signInWithGoogle(clientID: String, completion: @escaping (String?) -> Void)
         completion(nil)
         return
     }
-
     let config = GIDConfiguration(clientID: clientID)
     GIDSignIn.sharedInstance.configuration = config
-
     GIDSignIn.sharedInstance.signIn(withPresenting: presentingVC) { result, error in
         if let error = error {
             print("❌ Google Sign-In error: \(error.localizedDescription)")
             completion(nil)
             return
         }
-
         guard let idToken = result?.user.idToken?.tokenString else {
             print("❌ No ID token")
             completion(nil)
             return
         }
-
         print("✅ ID Token: \(idToken)")
         completion(idToken)
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(isSignedIn: .constant(true))
 }
+
+
