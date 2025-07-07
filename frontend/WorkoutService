@@ -1,12 +1,3 @@
-//
-//  WorkoutService.swift
-//  MyG
-//
-//  Created by Dylan Teo on 18/6/25.
-//
-//  WorkoutService.swift
-//  MyG
-
 import Foundation
 
 struct VolumeEntry: Codable {
