@@ -4,7 +4,6 @@
 //
 //  Created by Dylan Teo on 29/5/25.
 //
-
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
