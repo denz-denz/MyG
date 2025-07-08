@@ -2,7 +2,8 @@ const express = require('express');
 const Workout = require('../models/Workout');
 const mongoose = require('mongoose');
 const router = express.Router();
-
+const {OpenAI} = require('openai');
+const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
 
 function calculateExerciseVolume(exercise) {
     let exerciseVolume = 0;
@@ -153,10 +154,28 @@ router.patch('/:id/log', async (req, res) => {
         const workoutVolume = calculateWorkoutVolume(workout.exercises);
         console.log(workout.exercises)
         await workout.save();
+        const workoutSummary = workout.exercises.map(e => {
+            const sets = e.reps.map((rep, i) => {
+              const weight = e.weights[i] ?? '0';
+              return `${rep} reps @ ${weight}kg`;
+            }).join(', ');
+            return `- ${e.name}: ${sets}`;
+        }).join('\n');
+        const aiPrompt = `You are a helpful science-based fitness assistant looking to maximise hypertrophy. As a science-based lifter, you are looking to maximise muscle growth through mechanical tension and minimise central nervous system fatigue, and suggest exercises that are stable as well as easy to progressive overload. For example, exercises like the squat, bench and deadlift would be considered suboptimal unless the user really wants to do it or is a powerlifter as those exercises are very taxing on the central nervous sytem, and are not as stable as compared to using the smith or cables. Also, try to match muscular leverages and resistance profiles to suggest good exercises that best fits the resistance profile of the target muscle. Try to give good ordering of exercises too, so for example if the user aims to grow his shoulders, recommend doing shoulder exercises as his first exercise. The optimal rep range we are looking for here is 6-12. We try not to overdo the volume for each exercise(typically 2-3 sets is optimal). Here's the user's workout today:\n${workoutSummary}\n\nPlease give 2-3 concise suggestions to improve hypertrophy, stability, or recovery. Return it as plain bullet points.`;
+        const aiResponse = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              { role: 'system', content: 'You are a helpful and science-based lifting assistant.' },
+              { role: 'user', content: aiPrompt }
+            ],
+            temperature: 0.7
+          });
+        const suggestions = aiResponse.choices[0].message.content;
         res.status(201).json({
             message: "Workout logged successfully!",
             workoutId: workout._id,
-            workout: workout
+            workout: workout,
+            suggestions: suggestions
           });
     }
     catch (err) {

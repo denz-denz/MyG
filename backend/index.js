@@ -1,4 +1,4 @@
-//console.log("this is the right file lol!!!");
+console.log("this is the right file lol!!!");
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');

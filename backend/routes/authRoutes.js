@@ -73,7 +73,7 @@ router.post('/manual-login' , async (req, res) => {
 });
 
 //google login/signup route
-router.post('/google-login', async (req,res)=> {
+/*router.post('/google-login', async (req,res)=> {
   console.log("📩 /auth/google-login was hit");
   const { idToken } = req.body;
   console.log("📨 Received Google ID Token:", idToken);
@@ -112,7 +112,7 @@ router.post('/google-login', async (req,res)=> {
     console.error("Google login error:", err.message);
     res.status(401).json({ message: "Google login failed" });
   }
-});
+});*/
 
 const crypto = require('crypto'); // to generate random token
 
