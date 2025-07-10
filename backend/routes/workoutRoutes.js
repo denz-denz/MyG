@@ -154,6 +154,7 @@ router.patch('/:id/log', async (req, res) => {
         const workoutVolume = calculateWorkoutVolume(workout.exercises);
         console.log(workout.exercises)
         await workout.save();
+        //formatted current workout logged
         const workoutSummary = workout.exercises.map(e => {
             const sets = e.reps.map((rep, i) => {
               const weight = e.weights[i] ?? '0';
@@ -161,7 +162,22 @@ router.patch('/:id/log', async (req, res) => {
             }).join(', ');
             return `- ${e.name}: ${sets}`;
         }).join('\n');
-        const aiPrompt = `You are a helpful science-based fitness assistant looking to maximise hypertrophy. As a science-based lifter, you are looking to maximise muscle growth through mechanical tension and minimise central nervous system fatigue, and suggest exercises that are stable as well as easy to progressive overload. For example, exercises like the squat, bench and deadlift would be considered suboptimal unless the user really wants to do it or is a powerlifter as those exercises are very taxing on the central nervous sytem, and are not as stable as compared to using the smith or cables. Also, try to match muscular leverages and resistance profiles to suggest good exercises that best fits the resistance profile of the target muscle. Try to give good ordering of exercises too, so for example if the user aims to grow his shoulders, recommend doing shoulder exercises as his first exercise. The optimal rep range we are looking for here is 6-12. We try not to overdo the volume for each exercise(typically 2-3 sets is optimal). Here's the user's workout today:\n${workoutSummary}\n\nPlease give 2-3 concise suggestions to improve hypertrophy, stability, or recovery. Return it as plain bullet points. If the user did an optimal exercise with optimal rep range and you have no criticism, just reply with encouragement.`;
+        const userId = workout.userId;
+        const allWorkouts = await Workout.find({ userId }).sort({ date: -1 }).limit(20);
+        //formatted all workouts
+        const workoutHistory = allWorkouts.map(w => {
+            const date = new Date(w.date).toLocaleDateString();
+            const details = w.exercises.map(e => {
+                const sets = e.reps.map((rep, i) => {
+                    const weight = e.weights[i] ?? '0';
+                    return `${rep} reps @ ${weight}kg`;
+                }).join(', ');
+                return `- ${e.name}: ${sets}`;
+            }).join('\n');
+            return `Workout on ${date}:\n${details}`;
+        }).join('\n\n');
+
+        const aiPrompt = `You are a helpful science-based fitness assistant looking to maximise hypertrophy. As a science-based lifter, you are looking to maximise muscle growth through mechanical tension and minimise central nervous system fatigue, and suggest exercises that are stable as well as easy to progressive overload. For example, exercises like the squat, bench and deadlift would be considered suboptimal unless the user really wants to do it or is a powerlifter as those exercises are very taxing on the central nervous sytem, and are not as stable as compared to using the smith or cables. Also, try to match muscular leverages and resistance profiles to suggest good exercises/machines that best fits the resistance profile of the target muscle. The optimal rep range we are looking for here is 6-12. We try not to overdo the volume for each exercise(typically 2-3 sets is optimal). Here's the user's workout today:\n${workoutSummary}\n\n Here are the user's recent workout history:\n${workoutHistory}\n\nPlease give 2-3 concise suggestions based on current workout and all workouts done to improve hypertrophy, stability, or recovery. For example, if you see that a user keeps on training a specific body part, you can let him know which exact body part he keeps working on and advise him to train other parts more. If you notice that the volume of a specific exercise is decreasing, you can suggest lower volume for more recovery etc etc. Make sure your suggestions are not general and more more specifically targetted to this user. Return it as plain bullet points. If the user did an optimal exercise with optimal rep range and you have no criticism, just reply with encouragement.`;
         const aiResponse = await openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
             messages: [
@@ -183,21 +199,7 @@ router.patch('/:id/log', async (req, res) => {
         res.status(500).json({message: "Failed to log workout!", error: err.message});
     }
 });
-//get all workouts done by user
-router.get('/:userId', async (req, res) => {
-    const { userId } = req.params;
-  
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid userId" });
-    }
-  
-    try {
-      const workouts = await Workout.find({ userId: new mongoose.Types.ObjectId(userId) });
-      res.json(workouts);
-    } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
-    }
-  });
+
 //get specific exercise progress
 router.get('/:userId/:exerciseName/progress', async (req,res) => {
     const {userId, exerciseName} = req.params;
@@ -237,4 +239,20 @@ router.get('/:userId/:exerciseName/progress', async (req,res) => {
     }
    
 });
+
+//get all workouts done by user
+router.get('/:userId', async (req, res) => {
+    const { userId } = req.params;
+  
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid userId" });
+    }
+  
+    try {
+      const workouts = await Workout.find({ userId: new mongoose.Types.ObjectId(userId) });
+      res.json(workouts);
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  });
 module.exports = router;

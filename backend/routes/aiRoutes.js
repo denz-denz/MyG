@@ -125,11 +125,11 @@ router.post('/muscle-tier-analysis', async (req, res) => {
     Instructions:
   1. Focus on upper chest, mid chest, upper back, lats, front delts, side delts, rear delts, biceps, triceps, quads, hamstrings, and core.
   2. Classify each group into: "Elite" (most trained), "Intermediate" (moderate), or "Beginner" (least trained) and "Untouched" (untrained)
-  3. Output ONLY valid JSON like:
+  3. Output ONLY valid JSON such as:
   {
-    "upper chest": "Gold",
-    "mid chest": "Silver",
-    "upper back": "Bronze",
+    "upper chest": "Elite",
+    "mid chest": "Intermediate",
+    "upper back": "Beginner",
     ...
   }
   
