@@ -34,6 +34,9 @@ mongoose.connect(process.env.MONGODB_URI, {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on ${PORT}`);
 });
+app.get('/', (req, res) => {
+  res.send('✅ Backend is running!');
+});
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
