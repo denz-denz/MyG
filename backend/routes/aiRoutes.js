@@ -72,25 +72,47 @@ router.post('/ai-coach', async (req,res)=>{
 
 router.post('/macros-calculator', async (req,res)=>{
     const {foodInput} = req.body;
-    if (!foodInput){
-        return res.status(400).json({message: "no question provided!"});
-    }
-    try{ 
-        const aiResponse = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-            { role: "system", content: "You are a fitness coach that is in charge of my macro calculation. Be as accurate as possible and fact check across different sites to ensure the macros you give me are completely accurate. Return the response in json format like this {\"calories\": number , \"protein\":number, \"carbs\":number,\"fat\":number} so that i can easily access each value from the frontend.Respond only in JSON. Do not include any explanation or text outside the JSON" },
-            { role: "user", content: "what is the macros of " + foodInput }
-        ],
-        temperature: 0.7 //creativity scale
-    });
-        res.json({response: aiResponse.choices[0].message.content});
-    }
-    catch (err) {
-        console.error("error in ai-coach", err.message);
-        res.status(500).json({message: "AI coach unable to serve you at this moment", error: err.message});
-    }
+    if (!foodInput) {
+      return res.status(400).json({ message: "No food input provided!" });
+  }
 
+  try {
+      const aiResponse = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+              {
+                  role: "system",
+                  content: ` You are a fitness coach. The user gives you a food item.
+If it is a real, edible food, return the macros in this strict JSON format:
+{"calories": number, "protein": number, "carbs": number, "fat": number}.
+If it is not an edible food (like flowers, objects, nonsense), return:
+{"error": "Not an edible food"}
+Respond only with JSON, no explanation.`
+              },
+              {
+                  role: "user",
+                  content: `What is the macros of ${foodInput}`
+              }
+          ],
+          temperature: 0.7
+      });
+
+      const content = aiResponse.choices[0].message.content.trim();
+
+      let parsed;
+      try {
+          parsed = JSON.parse(content);
+      } catch {
+          console.error("Invalid GPT response format:", content);
+          return res.status(500).json({ message: "Invalid GPT response format", raw: content });
+      }
+
+      res.json(parsed);
+
+  } catch (err) {
+      console.error("Error in macros-calculator:", err.message);
+      res.status(500).json({ message: "AI coach unable to serve you at this moment", error: err.message });
+  }
 });
 router.post('/muscle-tier-analysis', async (req, res) => {
     const { userId } = req.body;

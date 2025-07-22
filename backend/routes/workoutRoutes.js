@@ -240,6 +240,30 @@ router.get('/:userId/:exerciseName/progress', async (req,res) => {
    
 });
 
+router.get('/:userId/exercise-list', async (req, res) => {
+    const { userId } = req.params;
+    const normalize = str => str.replace(/\s+/g, '').toLowerCase(); //standardise name to same as progress tracker
+  
+    try {
+      const workouts = await Workout.find({ userId });
+      const seen = new Map(); // hashmap to keep track of exercises seen
+      workouts.forEach(workout => {
+        workout.exercises.forEach(ex => {
+          const key = normalize(ex.name);
+          if (!seen.has(key)) {
+            seen.set(key, ex.name); // keep the original form
+          }
+        });
+      });
+  
+      const uniqueExercises = Array.from(seen.values());
+      res.status(200).json(uniqueExercises); //always return array
+    } catch (err) {
+      console.error("Error fetching exercise list:", err.message);
+      res.status(500).json({ message: "Failed to fetch exercise list", error: err.message });
+    }
+  });
+
 //get all workouts done by user
 router.get('/:userId', async (req, res) => {
     const { userId } = req.params;
@@ -255,4 +279,5 @@ router.get('/:userId', async (req, res) => {
       res.status(500).json({ message: "Server error", error: err.message });
     }
   });
+
 module.exports = router;
