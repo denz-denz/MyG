@@ -115,6 +115,7 @@ Respond only with JSON, no explanation.`
   }
 });
 router.post('/muscle-tier-analysis', async (req, res) => {
+    console.log("muscle tier route hit");
     const { userId } = req.body;
   
     if (!userId) {
@@ -166,8 +167,11 @@ router.post('/muscle-tier-analysis', async (req, res) => {
         ],
         temperature: 0.7
       });
-  
-      res.json({ response: aiResponse.choices[0].message.content });
+      const content = aiResponse.choices[0].message.content;
+      console.log("raw gpt output:", content);
+      const parsed = JSON.parse(content);
+      console.log("parsed json", parsed);
+      res.status(200).json({response: parsed});
   
     } catch (err) {
       console.error("error in muscle-tier-analysis:", err.message);
