@@ -23,6 +23,7 @@ app.use('/smartscan', photoRoutes);
 
 
 app.get('/', (req, res) => {
+  console.log(`[Ping] ${req.method} ${req.url}`);
   res.send('✅ Backend is running!');
 });
 app.use((req, res) => {
