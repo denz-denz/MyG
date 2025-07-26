@@ -1,1 +1,103 @@
+📦 How to Use MyG_Starter_Project.zip
+✅ Goal:
+Run the full MyG fitness app on your Mac using Xcode and your own Apple ID — no Apple Developer account needed.
+
+🛠 Prerequisites
+Mac running macOS Monterey or later
+
+Xcode 14+ installed from the App Store
+
+A free Apple ID signed into Xcode
+
+📁 Step-by-Step Setup Instructions
+1. Unzip the File
+Locate MyG_Starter_Project.zip in your downloads
+
+Right-click → “Open” to unzip
+
+You’ll now see a folder named MyG
+
+2. Open Xcode and Create a New Project
+Launch Xcode
+
+Select: Create a new Xcode project
+
+Template: Choose App under iOS
+
+Click Next
+
+Fill in the project info:
+Product Name: MyG
+
+Interface: SwiftUI
+
+Language: Swift
+
+Uncheck Core Data and Tests
+
+Click Next → Choose a location to save
+
+3. Replace Default Files with Provided Files
+In Finder, open the unzipped MyG folder
+
+Open the Sources/ folder
+
+Back in Xcode:
+Right-click the project group (in the sidebar) → Delete ContentView.swift and MyGApp.swift (the ones Xcode created)
+
+Drag all .swift files from Sources/ into the Xcode project navigator
+
+✅ Make sure "Copy items if needed" is checked
+
+✅ Make sure "Add to targets: MyG" is checked
+
+4. Add Required Resources
+Still in Xcode:
+
+Drag the Info.plist file into your project (replace the existing one)
+
+Drag HealthierEateries.geojson into the project as well
+
+In the right sidebar, ensure it's added to the "Copy Bundle Resources" section
+
+5. Set Up Signing with Your Apple ID
+Click the project name at the top of the sidebar
+
+Go to the Signing & Capabilities tab
+
+Under Team, choose your Apple ID (or add one via Xcode > Settings > Accounts)
+
+Change the Bundle Identifier to something unique (e.g., com.yourname.MyGTestApp)
+
+Xcode will generate a provisioning profile for free deployment
+
+6. Run the App
+At the top, choose a simulator (e.g., iPhone 14)
+
+Click ▶️ Run
+
+💡 First launch may take a few seconds as backend services wake up.
+
+✅ Feature Checklist to Test
+🔐 Authentication (Signup, Login, Google Login)
+
+🏋️ Workout Logging
+
+📈 Volume Progress Tracker
+
+🧠 Muscle Tier Analysis
+
+💬 AI Coach Chat
+
+📷 Food Macro Scanner
+
+🗺 Macro-Friendly Map View (SG-based)
+
+💡 Tips
+Make sure your Mac is connected to the internet
+
+If a feature doesn't work immediately, try again in 10–20 seconds — the backend may be waking from sleep
+
+You can run the app on your real iPhone if you plug it in and trust the device in Xcode
+
 
