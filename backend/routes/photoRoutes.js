@@ -34,7 +34,6 @@ Estimate the macros for this given portion of ${foodItem} which is eaten in Sing
     res.json({ foodItem, macros });
 
   } catch (err) {
-    console.error("photo-macros error:", err.message);
     res.status(500).json({ error: "Unable to analyze image", detail: err.message });
   }
 });

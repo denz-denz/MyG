@@ -28,9 +28,7 @@ function calculateWorkoutVolume(exercises) {
 
 //start workout
 router.post('/start', async (req,res) => {
-    console.log("start path hit");
     const {name, userId, date} = req.body;
-    //console.log(date);
     try {
         if (!userId) {
             return res.status(400).json({message: "invalid user!"});
@@ -52,10 +50,7 @@ router.post('/start', async (req,res) => {
 
 //add exercises
 router.patch('/:id/add-exercise', async (req,res)=> {
-    console.log("adding exercise path hit");
     const {name,sets,reps,weights} = req.body;
-    console.log("RECEIVED:", { reps, weights });
-    console.log("FULL req.body:", req.body);
     if (!name || !sets || !Array.isArray(reps) || !Array.isArray(weights)) {
         return res.status(400).json({ message: "Invalid exercise added!" });
     }
@@ -77,12 +72,8 @@ router.patch('/:id/add-exercise', async (req,res)=> {
         }
         const newExercise = {name:normalisedName, sets, reps, weights};
         newExercise.exerciseVolume = calculateExerciseVolume(newExercise);
-        /*if (!updatedWorkout) {
-            return res.status(404).json({ message: "Workout not found!" });
-        }*/
         workout.exercises.push(newExercise);
         workout.workoutVolume += newExercise.exerciseVolume;
-        console.log(workout.exercises)
         await workout.save();
         res.status(200).json({
             message: "Exercise added successfully",
@@ -90,7 +81,6 @@ router.patch('/:id/add-exercise', async (req,res)=> {
           });
     }
     catch (err) {
-        console.error("Error adding exercise:", err.message);
         res.status(500).json({ message: "Failed to add exercise", error: err.message });
     }
 });
@@ -141,7 +131,6 @@ router.delete('/:id', async (req,res) => {
 
 //log workout 
 router.patch('/:id/log', async (req, res) => {
-    console.log("log path hit");
     try {
         const workout = await Workout.findById(req.params.id);
         if (!workout){
@@ -150,7 +139,6 @@ router.patch('/:id/log', async (req, res) => {
         else if (!Array.isArray(workout.exercises) || workout.exercises.length <= 0) {
             return res.status(400).json({message: "Invalid workout logged!"});
         }
-        //const workout = new Workout({userId, date:date?new Date(date):Date.now, exercises});
         const workoutVolume = calculateWorkoutVolume(workout.exercises);
         console.log(workout.exercises)
         await workout.save();
@@ -195,7 +183,6 @@ router.patch('/:id/log', async (req, res) => {
           });
     }
     catch (err) {
-        console.error("error logging workout:", err.message);
         res.status(500).json({message: "Failed to log workout!", error: err.message});
     }
 });
@@ -203,9 +190,6 @@ router.patch('/:id/log', async (req, res) => {
 //get specific exercise progress
 router.get('/:userId/:exerciseName/progress', async (req,res) => {
     const {userId, exerciseName} = req.params;
-    console.log("progress path hit");
-    console.log("UserID:", userId);
-    console.log("Exercise Name:", exerciseName);
     const normalize = str => str.replace(/\s+/g, '').toLowerCase();
     try{
         const allWorkouts = await Workout.find({userId});
@@ -230,11 +214,9 @@ router.get('/:userId/:exerciseName/progress', async (req,res) => {
         });
         const formattedProgress = Object.entries(progress).map(([date, volume]) => ({ date, volume }));
         formattedProgress.sort((a,b)=>new Date(a.date)-new Date(b.date));
-        console.log(formattedProgress);
         res.json(formattedProgress);
     }
     catch (err) {
-        console.error(err.message);
         res.status(500).json({message: 'failed to retrieve exercise progress'});
     }
    
@@ -259,7 +241,6 @@ router.get('/:userId/exercise-list', async (req, res) => {
       const uniqueExercises = Array.from(seen.values());
       res.status(200).json(uniqueExercises); //always return array
     } catch (err) {
-      console.error("Error fetching exercise list:", err.message);
       res.status(500).json({ message: "Failed to fetch exercise list", error: err.message });
     }
   });

@@ -26,7 +26,6 @@ router.post('/signup', async (req, res) => {
         const newUser = new User({username: username, email: email, password: passwordHash});
         //save to db
         await newUser.save();
-        console.log("signup successful on backend")
         res.status(201).json({
             message: "Signup successful",
             userId: newUser._id,
@@ -42,7 +41,6 @@ router.post('/signup', async (req, res) => {
     
 //manual login route
 router.post('/manual-login' , async (req, res) => {
-    console.log('login route hit');
     const { email, password } = req.body;
     try {
     // 1. Find the user by email
@@ -64,8 +62,6 @@ router.post('/manual-login' , async (req, res) => {
       userId: user._id,
       email: user.email
     });
-    console.log('login done');
-
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -142,7 +138,6 @@ router.post('/forgot-password', async (req, res) => {
 
 router.post('/reset-password/:token', async (req, res)=> {
   const {token} = req.params;
-  console.log(token);
   const {newPassword} = req.body;
   try {
     const user = await User.findOne({resetPasswordToken:token,

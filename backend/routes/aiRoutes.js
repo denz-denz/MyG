@@ -8,7 +8,6 @@ require('dotenv').config();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Use .env 
 
 router.post('/ai-coach', async (req,res)=>{
-    console.log("ai coach hit");
     const {userId, question} = req.body;
     if (!question){
         return res.status(400).json({message: "no question provided!"});
@@ -18,10 +17,8 @@ router.post('/ai-coach', async (req,res)=>{
     }
     try{ 
         let chatHist = await ChatHistory.findOne({userId});
-        const allWorkouts = await Workout.find({userId: userId});
-        console.log(allWorkouts);
+        const allWorkouts = await Workout.find({userId: userId});   
         const recentWorkouts = allWorkouts.sort((a,b)=>b.date - a.date).slice(0,20);
-        console.log(recentWorkouts);
         let formattedHistory;
         if (recentWorkouts.length === 0) {
             formattedHistory = "no workouts logged yet";
@@ -43,11 +40,9 @@ router.post('/ai-coach', async (req,res)=>{
             chatHist = new ChatHistory({userId, messages:[]}); //first question
             await chatHist.save();
         }
-        console.log(formattedHistory);
         const formattedChatHistory = (chatHist?.messages || [])
             .map(m => `${m.role}: ${m.content}`)
             .join('\n');
-        console.log(formattedChatHistory);
         const systemPrompt = "You are a helpful science-based fitness assistant looking to maximise hypertrophy. As a science-based lifter, you are looking to maximise muscle growth through mechanical tension and minimise central nervous system fatigue, and suggest exercises that are stable as well as easy to progressive overload. For example, exercises like the squat, bench and deadlift would be considered suboptimal unless the user really wants to do it or is a powerlifter as those exercises are very taxing on the central nervous sytem, and are not as stable as compared to using the smith or cables. Also, try to match muscular leverages and resistance profiles to suggest good exercises that best fits the resistance profile of the target muscle. Try to give good ordering of exercises too, so for example if the user aims to grow his shoulders, recommend doing shoulder exercises as his first exercise.";
         const aiResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
@@ -61,7 +56,6 @@ router.post('/ai-coach', async (req,res)=>{
     });
         chatHist.messages.push({role:'user', content:question});
         await chatHist.save();
-        console.log(chatHist.messages);
         res.json({response: aiResponse.choices[0].message.content});
     }
     catch (err) {
@@ -115,7 +109,6 @@ Respond only with JSON, no explanation.`
   }
 });
 router.post('/muscle-tier-analysis', async (req, res) => {
-    console.log("muscle tier route hit");
     const { userId } = req.body;
   
     if (!userId) {
@@ -168,9 +161,7 @@ router.post('/muscle-tier-analysis', async (req, res) => {
         temperature: 0.7
       });
       const content = aiResponse.choices[0].message.content;
-      console.log("raw gpt output:", content);
       const parsed = JSON.parse(content);
-      console.log("parsed json", parsed);
       res.status(200).json({response: parsed});
   
     } catch (err) {
